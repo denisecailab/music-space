@@ -1,0 +1,15 @@
+channels:
+  - conda-forge
+dependencies:
+  - plotly
+  - panel
+  - numpy
+  - scipy
+  - scikit-learn
+  - bokeh
+  - pandas
+  - jupyter
+  - jupyter_bokeh
+  - spotipy
+  - pyyaml
+  - cryptography

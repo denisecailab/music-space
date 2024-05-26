@@ -1,0 +1,5 @@
+ssl
+plotly
+spotipy
+scikit-learn
+cryptography
