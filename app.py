@@ -32,10 +32,21 @@ APP_ID = b"gAAAAABmU2m_uhvOc7M0xlVdGo4ylOwwpIFWqnqdM0Thmpt2MakWrFUlBnuxM2IOS4_WL
 APP_SECRET = b"gAAAAABmU2m_v37-FNEm-gdvIYntNgXTz4YVvPaLGTl4G3ntSnNMt2xdnK7tbH8_qQeulrbrP1q9bIT0kTl4baLFhjDW0DPAMlH8ezDD22yKam6RRss25i8_vI2V_Hj8nGeHOKctTmjS"
 DATA = b"gAAAAABmU2m_pqhLmAPTjjzP7vIEGTiZjwvR0bMh90ppn5-K71mhTbrsM6zOphOmiH8TcKMQjJ6YAe02DTdl6rOO-HGD6kn_k1NqIWtns-A27iRAe2QwfdFWkOCQjtHViNRnI2Ax7h9RmLSQ_9IcSPdLrfAldqKCOSOM6LM59SedHPPq4QVhYGe5fsqb71ns8DLyjaUfpDum2phkfY6ncDEjXUbMw3j1S23shIii5bh-4Mc4xeSwnL9hT7gdPU_ckU4alUKXpqzpylfPEejFAlCcFx2gLJ_V1haxA_WskU7lHnRAPFCFY_Ki-ar2zorQlz0e8E7npZFZVvnIQojQ-8QyNT94rD0JtmBj4n822VXSiV5ytboijiymTETj1t6-JH1heomY7rUiGSF7p56NTiFfyg_Wehszaw=="
 
+pn.extension(
+    "plotly",
+    theme="dark",
+    design="material",
+    sizing_mode="stretch_width",
+    template="fast",
+    notifications=True,
+)
+pn.state.template.param.update(site="CaiShumanGroup", title="Lab Music Space")
+notif = pn.state.notifications  # https://github.com/holoviz/panel/issues/5488
+
 
 class MusicSpace:
     def __init__(self) -> None:
-        pass
+        self.data = None
 
     def decrypt_data(self, pw) -> None:
         kdf = PBKDF2HMAC(
@@ -85,20 +96,33 @@ class MusicSpace:
         fig.layout.autosize = True
         return fig
 
+    def cb_pw(self, pw=None):
+        if pw:
+            try:
+                self.decrypt_data(pw)
+            except:
+                notif.error("Invalid password")
+                return
+            try:
+                self.setup()
+                notif.success("Authentication success")
+            except:
+                pass
+                notif.error("Authentication failed, check your password")
+
+    def cb_plots(self, theme=None):
+        if self.data is not None:
+            return pn.pane.Plotly(self.update_plots(theme=theme))
+
 
 # %% build app
 ms = MusicSpace()
-ms.decrypt_data()
-ms.setup()
-pn.extension(
-    "plotly",
-    theme="dark",
-    design="material",
-    sizing_mode="stretch_width",
-    template="fast",
+wgt_pw = pn.widgets.PasswordInput(
+    name="Password", placeholder="Enter password (Enter to confirm)"
 )
-pn.state.template.param.update(site="CaiShumanGroup", title="Lab Music Space")
+pn.bind(ms.cb_pw, pw=wgt_pw, watch=True)
 pn.Column(
     "Lab Music Space",
-    pn.pane.Plotly(ms.update_plots()),
+    wgt_pw,
+    pn.bind(ms.cb_plots, wgt_pw),
 ).servable()
