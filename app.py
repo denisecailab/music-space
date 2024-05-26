@@ -47,6 +47,15 @@ notif = pn.state.notifications  # https://github.com/holoviz/panel/issues/5488
 class MusicSpace:
     def __init__(self) -> None:
         self.data = None
+        self.wgt_pw = pn.widgets.PasswordInput(
+            name="Password", placeholder="Enter password (Enter to confirm)"
+        )
+        self.wgt_pw.param.watch(self.cb_pw, "value")
+        self.plot_proj = None
+        self.layout = pn.Column("Lab Music Space", self.wgt_pw, self.plot_proj)
+
+    def serve(self) -> pn.Column:
+        return self.layout.servable()
 
     def decrypt_data(self, pw) -> None:
         kdf = PBKDF2HMAC(
@@ -61,7 +70,7 @@ class MusicSpace:
         self.app_secret = fernet.decrypt(APP_SECRET).decode("utf-8")
         self.data_raw = fernet.decrypt(DATA).decode("utf-8")
 
-    def setup(self) -> None:
+    def setup_spotify(self) -> None:
         auth = SpotifyClientCredentials(
             client_id=self.app_id, client_secret=self.app_secret
         )
@@ -79,7 +88,7 @@ class MusicSpace:
         for fn in self.feats:
             self.data[fn] = [f[fn] for f in feats]
 
-    def update_plots(self, theme=None):
+    def update_proj_plot(self, theme=None):
         pca = PCA(n_components=3, whiten=True)
         pcs = pca.fit_transform(self.data[self.feats])
         for i in range(3):
@@ -90,13 +99,19 @@ class MusicSpace:
             x="pc0",
             y="pc1",
             z="pc2",
+            color="member",
             template=theme,
             hover_data=["member", "artist", "name"],
         )
         fig.layout.autosize = True
-        return fig
+        if self.plot_proj is None:
+            self.plot_proj = pn.pane.Plotly(fig)
+            self.layout[2] = self.plot_proj
+        else:
+            self.plot_proj.object = fig
 
-    def cb_pw(self, pw=None):
+    def cb_pw(self, evt):
+        pw = evt.new
         if pw:
             try:
                 self.decrypt_data(pw)
@@ -104,25 +119,14 @@ class MusicSpace:
                 notif.error("Invalid password")
                 return
             try:
-                self.setup()
+                self.setup_spotify()
                 notif.success("Authentication success")
             except:
-                pass
                 notif.error("Authentication failed, check your password")
-
-    def cb_plots(self, theme=None):
-        if self.data is not None:
-            return pn.pane.Plotly(self.update_plots(theme=theme))
+                return
+            self.update_proj_plot()
 
 
-# %% build app
+# %% serve app
 ms = MusicSpace()
-wgt_pw = pn.widgets.PasswordInput(
-    name="Password", placeholder="Enter password (Enter to confirm)"
-)
-pn.bind(ms.cb_pw, pw=wgt_pw, watch=True)
-pn.Column(
-    "Lab Music Space",
-    wgt_pw,
-    pn.bind(ms.cb_plots, wgt_pw),
-).servable()
+ms.serve()
