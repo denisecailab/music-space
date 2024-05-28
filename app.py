@@ -187,7 +187,7 @@ class MusicSpace:
             x="pc0",
             y="pc1",
             z="pc2",
-            color="member",
+            color="lab",
             template=theme,
             hover_data=["member", "artist", "name"],
         )
