@@ -3,6 +3,7 @@ import base64
 import itertools as itt
 from io import StringIO
 
+import numpy as np
 import pandas as pd
 import panel as pn
 import plotly.express as px
@@ -69,6 +70,7 @@ class MusicSpace:
         self.nneighbor = 5
         self.ranges = dict()
         self.cmap = dict()
+        self.cid = None
 
     def serve(self) -> pn.Column:
         return self.template.servable()
@@ -103,9 +105,16 @@ class MusicSpace:
         uris = self.data["uri"]
         tracks = self.sp.tracks(uris)["tracks"]
         feats = self.sp.audio_features(uris)
+        ims = []
+        for t in tracks:
+            im = t["album"]["images"]
+            imsize = [i["width"] for i in im]
+            ims.append(im[np.argmax(imsize)]["url"])
         self.data["name"] = [t["name"] for t in tracks]
         self.data["id"] = [t["id"] for t in tracks]
         self.data["artist"] = [t["artists"][0]["name"] for t in tracks]
+        self.data["album"] = [t["album"]["name"] for t in tracks]
+        self.data["image"] = ims
         for fn in self.feats:
             self.data[fn] = [f[fn] for f in feats]
         self.data["new"] = False
@@ -130,12 +139,16 @@ class MusicSpace:
         if not (track["id"] in self.data["id"].to_list()):
             feats = self.sp.audio_features(uri)[0]
             feats = {fn: feats[fn] for fn in self.feats}
+            im = track["album"]["images"]
+            imsize = [i["width"] for i in im]
             dat = {
                 "member": member,
                 "uri": uri,
                 "name": track["name"],
                 "id": track["id"],
                 "artist": track["artists"][0]["name"],
+                "album": track["album"]["name"],
+                "image": im[np.argmax(imsize)]["url"],
                 "new": True,
                 "annot": True,
             }
@@ -176,6 +189,10 @@ class MusicSpace:
                 name="N_neighbors", value=5, start=1, end=int(len(self.data) * 0.8)
             )
             wgt_nn.param.watch(self.cb_nneighbor, "value")
+            self.wgt_current_tk = pn.pane.Markdown()
+            self.wgt_current_im = pn.pane.JPG(height=300)
+            self.cid = self.data["id"][0]
+            self.update_current_tk()
             self.layout_main.clear()
             self.layout_main.extend(
                 [
@@ -187,7 +204,10 @@ class MusicSpace:
                             wgt_nn,
                             self.plot_proj,
                         ),
-                        self.plot_feat,
+                        pn.Column(
+                            pn.Row(self.wgt_current_im, self.wgt_current_tk),
+                            self.plot_feat,
+                        ),
                     ),
                 ]
             )
@@ -232,10 +252,12 @@ class MusicSpace:
             color_discrete_map=self.cmap,
             template=theme,
             hover_data=["member", "artist", "name"],
+            custom_data=["id"],
         )
         fig.layout.autosize = True
         self.plot_proj.object = fig
         self.add_annt_data(self.data[self.data["annot"]])
+        self.plot_proj.param.watch(self.cb_hover, "hover_data")
 
     def add_annt_data(self, new_dat):
         for _, row in new_dat.iterrows():
@@ -248,6 +270,7 @@ class MusicSpace:
                     color="member",
                     color_discrete_map=self.cmap,
                     hover_data=["member", "artist", "name"],
+                    custom_data=["id"],
                 ).data[0]
             )
             old_annot = self.plot_proj.object.layout.scene.annotations
@@ -317,6 +340,15 @@ class MusicSpace:
             ).data
         )
 
+    def update_current_tk(self):
+        cur_t = self.data.set_index("id").loc[self.cid]
+        self.wgt_current_tk.object = (
+            "## Liked by **{}**\n## **{}**\n### **{}** • **{}**".format(
+                cur_t["member"], cur_t["name"], cur_t["artist"], cur_t["album"]
+            )
+        )
+        self.wgt_current_im.object = cur_t["image"]
+
     def cb_modal(self, evt):
         self.template.open_modal()
 
@@ -355,6 +387,15 @@ class MusicSpace:
         self.nneighbor = evt.new
         self.update_model()
         self.init_proj_plot()
+
+    def cb_hover(self, evt):
+        try:
+            cid = evt.new["points"][0]["customdata"][0]
+        except TypeError:
+            return
+        if cid != self.cid:
+            self.cid = cid
+            self.update_current_tk()
 
 
 # %% serve app
