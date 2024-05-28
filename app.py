@@ -317,7 +317,7 @@ class MusicSpace:
             template=theme,
             hover_data=["member", "artist", "name"],
         )
-        fig.layout.autosize = True
+        fig.update_layout(autosize=True, margin_r=250)
         self.plot_feat.object = fig
 
     def add_feat_line(self, new_dat):
@@ -339,6 +339,37 @@ class MusicSpace:
                 hover_data=["member", "artist", "name"],
             ).data
         )
+
+    def update_hover_feat(self):
+        fit_feat = self.feats_z if self.use_z else self.feats
+        row = self.data.set_index("id").loc[self.cid]
+        df = row.to_frame().T.melt(
+            id_vars=["member", "artist", "name"],
+            value_vars=fit_feat,
+            var_name="feat",
+            value_name="value",
+        )
+        trace = px.line(
+            df,
+            x="feat",
+            y="value",
+            color="member",
+            color_discrete_map=self.cmap,
+            category_orders={"feat": fit_feat},
+            hover_data=["member", "artist", "name"],
+        ).data[0]
+        trace["meta"] = "id_hover"
+        old_data = self.plot_feat.object.data
+        hover_idxs = []
+        for idx, tr in enumerate(old_data):
+            if tr["meta"] == "id_hover":
+                hover_idxs.append(idx)
+        if hover_idxs:
+            assert len(hover_idxs) == 1
+            new_data = list(old_data)
+            del new_data[hover_idxs[0]]
+            self.plot_feat.object.data = new_data
+        self.plot_feat.object.add_trace(trace)
 
     def update_current_tk(self):
         cur_t = self.data.set_index("id").loc[self.cid]
@@ -396,6 +427,7 @@ class MusicSpace:
         if cid != self.cid:
             self.cid = cid
             self.update_current_tk()
+            self.update_hover_feat()
 
 
 # %% serve app
