@@ -60,6 +60,7 @@ class MusicSpace:
         self.template.main.append(self.layout_main)
         self.template.modal.append(self.layout_modal)
         # init data
+        self.exc_single_mem = True
         self.fit_org_only = False
         self.use_z = True
         self.auth_success = False
@@ -93,6 +94,10 @@ class MusicSpace:
         self.feats_z = [f + "-z" for f in self.feats]
         self.sp = spotipy.Spotify(client_credentials_manager=auth)
         self.data = pd.read_csv(StringIO(self.data_raw))
+        if self.exc_single_mem:
+            mem_count = self.data.groupby("lab")["member"].nunique()
+            keep_labs = mem_count.index[mem_count > 1]
+            self.data = self.data[self.data["lab"].isin(keep_labs)].copy()
 
     def populate_feats(self):
         uris = self.data["uri"]
