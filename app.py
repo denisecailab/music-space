@@ -29,10 +29,10 @@ FEATS = [
     "duration_ms",
     "time_signature",
 ]
-KEY_SALT = b"\xf3j\x10\x1a\x8f\xd8\xb6\xe7:c\xa0\xb9\xd7:\x9a\xdb"
-APP_ID = b"gAAAAABmU2m_uhvOc7M0xlVdGo4ylOwwpIFWqnqdM0Thmpt2MakWrFUlBnuxM2IOS4_WL-hyhJ468MRFyFIJsi-xmIBHCoCD0k3LNpkEkHwqluywgXU5Wz9zrY92VHHuolEne4yXiMz_"
-APP_SECRET = b"gAAAAABmU2m_v37-FNEm-gdvIYntNgXTz4YVvPaLGTl4G3ntSnNMt2xdnK7tbH8_qQeulrbrP1q9bIT0kTl4baLFhjDW0DPAMlH8ezDD22yKam6RRss25i8_vI2V_Hj8nGeHOKctTmjS"
-DATA = b"gAAAAABmU2m_pqhLmAPTjjzP7vIEGTiZjwvR0bMh90ppn5-K71mhTbrsM6zOphOmiH8TcKMQjJ6YAe02DTdl6rOO-HGD6kn_k1NqIWtns-A27iRAe2QwfdFWkOCQjtHViNRnI2Ax7h9RmLSQ_9IcSPdLrfAldqKCOSOM6LM59SedHPPq4QVhYGe5fsqb71ns8DLyjaUfpDum2phkfY6ncDEjXUbMw3j1S23shIii5bh-4Mc4xeSwnL9hT7gdPU_ckU4alUKXpqzpylfPEejFAlCcFx2gLJ_V1haxA_WskU7lHnRAPFCFY_Ki-ar2zorQlz0e8E7npZFZVvnIQojQ-8QyNT94rD0JtmBj4n822VXSiV5ytboijiymTETj1t6-JH1heomY7rUiGSF7p56NTiFfyg_Wehszaw=="
+KEY_SALT = b"\x89 \xa9\xf4\xe1\xbe\x84\x01'ym\xf0k\xcf\x7f{"
+APP_ID = b"gAAAAABmVWcj69yZexqsTUWDOri8TQsvqyO36J5Qbm5G1rJEJQ3ePqRtIL9CzNQDQpRsfJa6iCWFjTUHpdf2g37qPWn7h00Nn7UYKhIkDmQ6NaHrwaLMZd-s7-Nx8Z2MebFe6ilK_yBy"
+APP_SECRET = b"gAAAAABmVWcjpgtCHRP6qeZfnu_y-6-6BMz3L9pOWDBzpX2Zq1ng5pIXall8Z6GmTlW4BMGHOkP3CUSVvvVNAU0pEnS0arve8dWOLbcczgJbHMnjiKXQGjDqvA1SmV27UzbXTgtLK79V"
+DATA = b"gAAAAABmVWcjVS0wbucdFxW4YXkPQv6z6afksP3CQ5jCSPgXrrjF-GG42szszvnE-HV5DMhHIoHL_OpqRkvxq1yzk_WdWTMQeZ7X10SELeAOx7unoQkdw901e0TYkoj4f-yp9tazuW0JCiOo8QK_MKI4VgCviZ-gFLPf8V-AczckQg39qScaUZ0JoRV8RkJieCrKSuzLcqAzEgj-sZvrTC81yLsSLzipHKu_bx2u6ef-WPCZp0p7jDXhTbvy_Xm8UYvFOEArtNWHzBE3NXR21uk1Zrx2LvIpm2oUPdSqVr0JOWZaToJMnK6SfZEbeKvH7dD0XK2KoBcJvi-xhCunwWBoy4hYISn_ld75I8f4DmBnHANYdd-1by1C-AIqfhLL3aZGbGVRbNIOFuyXfr0dF5IixkO2Y9evIAdhtIZTSXLvrJScR9185ar98o19r5ii_qkux6laFBIRlU-6QykTSZ6dWY5_xMtsyoWrBYBkruhzZnEcA5RVSW3isox0DdNnITRfeOpkp9D5RxsPZEp5r2plZIKbJpjCufaNBga_31ovoid9dSAJuSXvGf6Q_JjikxSMYYu78qFWOPm_DYVhgr_sWMs2bkgc-cWHaLYHxv--h_QIGdIe0K4dlqX0gZ1KvJQZ6a7DUf7XAv5bhcDtrc1ZFlVRYYPl45C9HrfrRG7EyIB3RxT88O38Mn99a3WVGpl8qJKDDu1WTlLeul-BaAywncf51ehzL49tL8Qhbio4kQVjYNjEOJJbOemX4M5aJb17hk3X7FeiM1AU6S2-z7UoRuX72BXORJdZIfgrnN9wp4YfLu-c9gjSpkBbjti90ce1NmsZT7CUJQXNbqGOO5iKBMIUarCmgn0pj3rxWMWp4PzzQm0F_gbLVdNzvrkQ6ddUr8MHBuiaib1VTeIEuYbId-m1HPyEduM5MGqSRJMo5uWEBOrNwibm5uuGaaWSOibC2Rp-kMHqQJRUKGF2_5svzYuKrx7fCPWV1xDDyL2SMzvYIfikH-QJRqWUs6gUoVJdkHRCUEw6CqIRGwkxYye_XlVj-LtehW7uAXJfAYdv90tyAHwwytwtLiZRXQhyce1WHS7FfOmgvasyZs754xH0-pcDgOLU2VeCigS4WuBknIrpJXyeGqrJxKpMxAfmm4SmFy686WUavj7D1dfaZ4xr91ryBLoOk4VusMDlitGBpEkxfiIhA5_8MKbfnwfSR2WDs-Ygye-ktY6c0kTV92HOyG89h5xS4MjoAaKuyQLBKS-hBIFomDx_z_PuRA4oLhZ6Ax1Uin2MOLeIPD86Hbh69JCK1w-HW1QAHnXPfd8fEikXpOzekOG2OfM8Wa7l2OPnBfz4N1c9j7bkP_NceCOsdxu9t2aSfMaTYLxStjJJb6yD0K09yrnfFs0eWzITHfFopW7XHXOvkV4F-yBCrNY3TtUCN8-otaDhAmQPy9anwiibljJiMQzxEt3djn2vxsyUwKXa2wErZ1KFRKkI13onWHYi1325zSluTWZH2NAMhIPuHAUF5aliQjtEMqMvIxr2rFmwhB2U5wEZPjNUuwhZueiEsfSgWrS7eSPXMwXueRkkT3Tw25NxraBa3yT0I60rn7eD6eNU_ibPngPtQAMVyfiRRqeA7flN8QB_ZKfPWybR8KaPZ2GgdqCxfmIBvgsuAfsHer0xwoym81qH0fgYJ0L_SUr-IGhFrm0PYn956OD6POrpIAl4yk57S6qBCCEdv8_NB96iUvVN6YNoETKVKa588XZaxJplMW6-x38IoZV02sbJGwAqndY3THXVCEdxawGdRlsNttlT1YQbIzZroE77nUkhg77n6Ew5VpNQ5eKh_6AQLoVCiypXN4c_FKpRgfm9IMcjgGvzdqWNa-TKyc1rQfH2WIq61CMnBRhPGIFmTWr_NnWFQM0MIUkW_n6m-oz-GV7hTenE4LYdNvb4SKcxuUU-vA_bwhhOv3YOzwfzdivWsv5YCBY_Nu9ARbg9ZN9vAbq3P0QmCWdj83GLw_xEPPeURT0jY0A15-RyYoeDX65_hBGkSr0Y-EPVIzj03j7fQdy00LYrVRCkeYX2iyZd-NuHrtiMuKXE8s3wXKOcrTqZZLMwrw3bEzt_9ySLQI7HopRuA3WWeUB_xO-iYJHOfW9XqqnOQtlk-6vxAr-Jtl7lBszf69TDTSXlJpFpaoWgwjSkHMzUAUQgEkdA1VqHW1j8mj5sohb7PKBAACM082cSqJyP6v-ikuTfZZwZEXvKNE0CrkhAQL2HSMDXVi_RpEoceP1EElpgSdugP6jveoNWsFQKZpmQGjD06mB2iJ-7WHEvsdfc6lN468RUg1Xnm32_52SlWpwC95gDV9z0OvLwwHvlx4P9bkMmgXLSyrBAKlWNkjcdzBwKe-BISy2JeeXDuAFOX9SNPxZYcoMxH2dsToEgV6FotydbWaYbqSoCw_yJcHzdb9ZsNIBhsi8KA2gMele-WM-0LEdew8Z6tM6C01zxPpz5O5W8l4eeL40MliaaWTHy7Ez_4zy0e0euB8B4Yy4feytooQFAKzO0_TvO0yLK0mqZ4HZKGfBIWm2OkrnpKuXyLnXqKrz5eFpmQyQoBG3cdCPjuRHCxIZGQOBA13MXUqfj-hTbqYa_Hhvzy8vh1rfMEIN9bF8mMNrHH01Xc2Xo456kBjzqoojCzGx9mZ2hsygzRG2Vs8WX009O3anLkTOU9z1IoqNwMk0nWbjvEq2xWl2r-CuYqMfvXRXvQ15O1xZTGCT5ZtSBRDDqKZXO-SMN6ABG3HX8imaiA_S2mqyUEjXTAq1eYn9ZCk5eVhGoTrGdcSRZSwNk12an54k7F74cnREj6zH1rzul8So4w67mK2AgduURJ746oD0mkv3VTmYCH9wVbTwcGirMO_ZKLZnoEMYcz183BpjgwIwZQnb7m9hcjBO3Ct7mB7wHTyuOFh0cd85epWQxksCud-7ensSGFPmBA3kV5hKu3LisMrM3v1U-J-bf8jJ8KWk_5d5LvX4AinluIakCx6JdZWFWdEJawkhMeq9s_WRqP_TmqdKvpSdDiivAP9M8IvrDEGQYrZXmhxvaZKRocl9_ZR1MtKuSAN9f7nd-au2I3Gf5Z0mx18h0NvUfLiazoWyw2UU7hHU6t_F1NF95XSxN92zh1CCU9Flzi0Xj77HJYZexVctMPCb3LNRQY78ap3WTqOynSoDSeYGU-k8ps3GEN1DZTaTJJMyqOIsopeJM0XiJ4eDPBDugS6LBphy1alm_i3Q702XYLEafCZv9oDDfRnh9rcwZK8pZJLzvZYe_4k6lrjjRQssAUVyiqQ0bqdN7xknvcMnf7tnvGbfHJpBBFqHGUlb0zXUuaonIcSQXnQAylfEigUDsYlJvirmgS_CUcigJ83_WH1ebaqfAAYxTDv2UgBWTh_uY6pLA5fBQLZJrJg=="
 
 pn.extension("plotly", notifications=True)
 
@@ -84,7 +84,6 @@ class MusicSpace:
         self.feats = FEATS
         self.sp = spotipy.Spotify(client_credentials_manager=auth)
         self.data = pd.read_csv(StringIO(self.data_raw))
-        self.populate_feats()
 
     def populate_feats(self):
         uris = self.data["uri"]
@@ -212,6 +211,11 @@ class MusicSpace:
                 self.notif.success("Authentication success")
             except:
                 self.notif.error("Authentication failed, check your password")
+                return
+            try:
+                self.populate_feats()
+            except:
+                self.notif.error("Data corrupted, check uri")
                 return
             self.update_model()
             self.update_proj_plot()
