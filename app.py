@@ -10,6 +10,7 @@ import spotipy
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from plotly.express.colors import qualitative
 from sklearn.decomposition import PCA
 from sklearn.manifold import Isomap
 from spotipy.exceptions import SpotifyException
@@ -61,6 +62,7 @@ class MusicSpace:
         self.auth_success = False
         self.data = None
         self.model = None
+        self.nneighbor = 5
 
     def serve(self) -> pn.Column:
         return self.template.servable()
@@ -96,6 +98,7 @@ class MusicSpace:
         for fn in self.feats:
             self.data[fn] = [f[fn] for f in feats]
         self.data["new"] = False
+        self.data["annot"] = False
 
     def add_entry(self, member, uri):
         try:
@@ -113,6 +116,7 @@ class MusicSpace:
                 "id": track["id"],
                 "artist": track["artists"][0]["name"],
                 "new": True,
+                "annot": True,
             }
             dat.update(feats)
             comps = self.model.transform(
@@ -121,7 +125,7 @@ class MusicSpace:
             dat.update({"comp{}".format(i): p for i, p in enumerate(comps)})
             self.data = pd.concat([self.data, pd.DataFrame([dat])], ignore_index=True)
 
-    def update_main(self):
+    def init_main(self):
         if self.auth_success:
             wgt_title = pn.pane.Alert("Welcome to Lab Music Space!", alert_type="dark")
             wgt_info = pn.pane.Alert(
@@ -135,19 +139,53 @@ class MusicSpace:
             self.wgt_link = pn.widgets.TextInput(name="Spotify Link")
             wgt_add = pn.widgets.Button(name="Add Member")
             wgt_add.on_click(self.cb_add_member)
+            wgt_nn = pn.widgets.IntSlider(
+                name="N_neighbors", value=5, start=1, end=int(len(self.data) * 0.8)
+            )
+            wgt_nn.param.watch(self.cb_nneighbor, "value")
             self.layout_main.clear()
             self.layout_main.extend(
                 [
                     wgt_title,
                     wgt_info,
                     pn.Row(self.wgt_member, self.wgt_link, wgt_add),
+                    wgt_nn,
                     self.plot_proj,
                 ]
             )
             self.template.close_modal()
 
-    def update_annotation(self):
-        new_dat = self.data[self.data["new"]]
+    def update_model(self, model="isomap"):
+        if model == "pca":
+            self.model = PCA(n_components=3, whiten=True)
+        elif model == "isomap":
+            self.model = Isomap(
+                n_neighbors=self.nneighbor,
+                n_components=3,
+                neighbors_algorithm="brute",
+            )
+        self.model.fit(self.data.loc[~self.data["annot"], self.feats])
+        comps = self.model.transform(self.data[self.feats])
+        for i in range(3):
+            self.data["comp{}".format(i)] = comps[:, i]
+
+    def init_proj_plot(self, theme=None):
+        theme = "plotly" if theme == "light" else "plotly_dark"
+        fig = px.scatter_3d(
+            self.data[~self.data["annot"]],
+            x="comp0",
+            y="comp1",
+            z="comp2",
+            color="lab",
+            template=theme,
+            hover_data=["member", "artist", "name"],
+        )
+        fig.layout.autosize = True
+        self.plot_proj.object = fig
+        self.add_annt_data(self.data[self.data["annot"]])
+        self.data["new"] = False
+
+    def add_annt_data(self, new_dat):
         for idx, row in new_dat.iterrows():
             self.plot_proj.object.add_trace(
                 px.scatter_3d(
@@ -156,6 +194,7 @@ class MusicSpace:
                     y="comp1",
                     z="comp2",
                     color="member",
+                    color_discrete_map={row["member"]: qualitative.Plotly[4]},
                     hover_data=["member", "artist", "name"],
                 ).data[0]
             )
@@ -169,38 +208,15 @@ class MusicSpace:
                             "y": row["comp1"],
                             "z": row["comp2"],
                             "text": row["member"],
+                            "font": {"size": 16},
                         }
                     ]
                 }
             )
             self.data.loc[idx, "new"] = False
 
-    def update_model(self, model="isomap"):
-        if model == "pca":
-            self.model = PCA(n_components=3, whiten=True)
-        elif model == "isomap":
-            self.model = Isomap(
-                n_neighbors=int(len(self.data) / 5),
-                n_components=3,
-                neighbors_algorithm="brute",
-            )
-        comps = self.model.fit_transform(self.data[self.feats])
-        for i in range(3):
-            self.data["comp{}".format(i)] = comps[:, i]
-
-    def update_proj_plot(self, theme=None):
-        theme = "plotly" if theme == "light" else "plotly_dark"
-        fig = px.scatter_3d(
-            self.data,
-            x="comp0",
-            y="comp1",
-            z="comp2",
-            color="lab",
-            template=theme,
-            hover_data=["member", "artist", "name"],
-        )
-        fig.layout.autosize = True
-        self.plot_proj.object = fig
+    def update_proj_plot(self):
+        self.add_annt_data(self.data[self.data["new"]])
 
     def cb_modal(self, evt):
         self.template.open_modal()
@@ -226,12 +242,17 @@ class MusicSpace:
                 self.notif.error("Data corrupted, check uri")
                 return
             self.update_model()
-            self.update_proj_plot()
-            self.update_main()
+            self.init_proj_plot()
+            self.init_main()
 
     def cb_add_member(self, evt):
         self.add_entry(self.wgt_member.value_input, self.wgt_link.value_input)
-        self.update_annotation()
+        self.update_proj_plot()
+
+    def cb_nneighbor(self, evt):
+        self.nneighbor = evt.new
+        self.update_model()
+        self.init_proj_plot()
 
 
 # %% serve app
