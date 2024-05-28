@@ -1,5 +1,6 @@
 # %% import and definition
 import base64
+import itertools as itt
 from io import StringIO
 
 import pandas as pd
@@ -66,6 +67,7 @@ class MusicSpace:
         self.model = None
         self.nneighbor = 5
         self.ranges = dict()
+        self.cmap = dict()
 
     def serve(self) -> pn.Column:
         return self.template.servable()
@@ -104,6 +106,15 @@ class MusicSpace:
         self.data["new"] = False
         self.data["annot"] = False
         self.update_data_z()
+        self.update_cmap()
+
+    def update_cmap(self):
+        org_data = self.data[~self.data["annot"]]
+        annot_data = self.data[self.data["annot"]]
+        for lab, c in zip(org_data["lab"].unique(), itt.cycle(qualitative.Safe)):
+            self.cmap[lab] = c
+        for mem, c in zip(annot_data["member"].unique(), itt.cycle(qualitative.Plotly)):
+            self.cmap[mem] = c
 
     def add_entry(self, member, uri):
         try:
@@ -126,6 +137,7 @@ class MusicSpace:
             dat.update(feats)
             self.data = pd.concat([self.data, pd.DataFrame([dat])], ignore_index=True)
             self.update_data_z()
+            self.update_cmap()
             if self.fit_org_only:
                 idx = self.data.index[-1]
                 fit_feat = self.feats_z if self.use_z else self.feats
@@ -212,16 +224,16 @@ class MusicSpace:
             # range_y=self.ranges["comp1"],
             # range_z=self.ranges["comp2"],
             color="lab",
+            color_discrete_map=self.cmap,
             template=theme,
             hover_data=["member", "artist", "name"],
         )
         fig.layout.autosize = True
         self.plot_proj.object = fig
         self.add_annt_data(self.data[self.data["annot"]])
-        self.data["new"] = False
 
     def add_annt_data(self, new_dat):
-        for idx, row in new_dat.iterrows():
+        for _, row in new_dat.iterrows():
             self.plot_proj.object.add_trace(
                 px.scatter_3d(
                     row.to_frame().T,
@@ -229,7 +241,7 @@ class MusicSpace:
                     y="comp1",
                     z="comp2",
                     color="member",
-                    color_discrete_map={row["member"]: qualitative.Plotly[4]},
+                    color_discrete_map=self.cmap,
                     hover_data=["member", "artist", "name"],
                 ).data[0]
             )
@@ -248,13 +260,14 @@ class MusicSpace:
                     ]
                 }
             )
-            self.data.loc[idx, "new"] = False
 
     def update_proj_plot(self):
-        if self.fit_org_only:
-            self.add_annt_data(self.data[self.data["new"]])
-        else:
-            self.init_proj_plot()
+        newdat = self.data[self.data["new"]]
+        if len(newdat) > 0:
+            if self.fit_org_only:
+                self.add_annt_data(newdat)
+            else:
+                self.init_proj_plot()
 
     def init_feat_plot(self, theme=None):
         theme = "plotly" if theme == "light" else "plotly_dark"
@@ -277,10 +290,22 @@ class MusicSpace:
             y="mean",
             error_y="sem",
             color="lab",
+            color_discrete_map=self.cmap,
             template=theme,
         )
         fig.layout.autosize = True
         self.plot_feat.object = fig
+
+    def add_feat_line(self, new_dat):
+        fit_feat = self.feats_z if self.use_z else self.feats
+        df = new_dat.melt(
+            id_vars=["member"], value_vars=fit_feat, var_name="feat", value_name="value"
+        ).sort_values("feat")
+        self.plot_feat.object.add_traces(
+            px.line(
+                df, x="feat", y="value", color="member", color_discrete_map=self.cmap
+            ).data
+        )
 
     def cb_modal(self, evt):
         self.template.open_modal()
@@ -313,6 +338,8 @@ class MusicSpace:
     def cb_add_member(self, evt):
         self.add_entry(self.wgt_member.value_input, self.wgt_link.value_input)
         self.update_proj_plot()
+        self.add_feat_line(self.data[self.data["new"]])
+        self.data["new"] = False
 
     def cb_nneighbor(self, evt):
         self.nneighbor = evt.new
