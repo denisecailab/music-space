@@ -49,15 +49,19 @@ class MusicSpace:
         # https://github.com/holoviz/panel/issues/5488
         self.notif = pn.state.notifications
         wgt_pw = pn.widgets.PasswordInput(
-            name="Password", placeholder="Press <Enter> to confirm"
+            name="Password",
+            placeholder="Press <Enter> to confirm",
+            styles={"font-size": "120%"},
         )
         wgt_pw.param.watch(self.cb_pw, "value")
-        modal_btn = pn.widgets.Button(name="Enter Password")
+        modal_btn = pn.widgets.Button(
+            name="Enter Password", styles={"font-size": "120%"}
+        )
         modal_btn.on_click(self.cb_modal)
         self.plot_proj = pn.pane.Plotly()
         self.plot_feat = pn.pane.Plotly()
         self.layout_main = pn.Column(modal_btn, sizing_mode="stretch_width")
-        self.layout_modal = pn.Column("Hint: c#1", wgt_pw)
+        self.layout_modal = pn.Column("Hint: c#1", wgt_pw, styles={"font-size": "120%"})
         self.template.main.append(self.layout_main)
         self.template.modal.append(self.layout_modal)
         # init data
@@ -173,35 +177,66 @@ class MusicSpace:
 
     def init_main(self):
         if self.auth_success:
-            wgt_title = pn.pane.Alert("Welcome to Lab Music Space!", alert_type="dark")
-            wgt_info = pn.pane.Alert(
-                """
-                - Input the name and favorite song of new lab member to show in music space
-                - Hover over individual points to see more info
-                """,
-                alert_type="info",
+            wgt_title = pn.pane.Alert(
+                "# Welcome to Lab Music Space!\n"
+                "This tool visualize lab music space defined by everyone's favorite song.\n"
+                "Having this completely unbiased and objective metric space is extremely important, especially for recruitment purpose, because **Team work makes the best work!**",
+                alert_type="dark",
+                styles={"font-size": "120%"},
             )
-            self.wgt_member = pn.widgets.TextInput(name="New Member")
-            self.wgt_link = pn.widgets.TextInput(name="Spotify Link")
-            wgt_add = pn.widgets.Button(name="Add Member")
+            wgt_info = pn.pane.Alert(
+                "# How to use\n"
+                "- Input the name and favorite song of new lab member to show in music space.\n"
+                "- Hover over individual points to see more info.\n"
+                "- `N_neighbors` is a parameter controlling how divided the points are. "
+                "Lower value will make points more likely to be divided/form local clusters",
+                alert_type="info",
+                styles={"font-size": "120%"},
+            )
+            self.wgt_member = pn.widgets.TextInput(
+                name="New Member",
+                align="center",
+                styles={"font-size": "110%"},
+            )
+            self.wgt_link = pn.widgets.TextInput(
+                name="Spotify Link",
+                align="center",
+                styles={"font-size": "110%"},
+            )
+            wgt_add = pn.widgets.Button(
+                name="Add Member",
+                align="center",
+                styles={"font-size": "110%"},
+            )
             wgt_add.on_click(self.cb_add_member)
             wgt_nn = pn.widgets.IntSlider(
-                name="N_neighbors", value=5, start=1, end=int(len(self.data) * 0.8)
+                name="N_neighbors",
+                value=5,
+                start=1,
+                end=int(len(self.data) * 0.8),
+                styles={"font-size": "110%"},
             )
             wgt_nn.param.watch(self.cb_nneighbor, "value")
-            self.wgt_current_tk = pn.pane.Markdown()
-            self.wgt_current_im = pn.pane.JPG(height=300)
+            self.wgt_current_tk = pn.pane.Markdown(styles={"font-size": "120%"})
+            self.wgt_current_im = pn.pane.JPG(height=500)
             self.cid = self.data["id"][0]
             self.update_current_tk()
             self.layout_main.clear()
             self.layout_main.extend(
                 [
-                    wgt_title,
-                    wgt_info,
                     pn.Row(
                         pn.Column(
-                            pn.Row(self.wgt_member, self.wgt_link, wgt_add),
-                            wgt_nn,
+                            wgt_title,
+                            wgt_info,
+                            pn.Row(
+                                self.wgt_member,
+                                self.wgt_link,
+                                wgt_add,
+                                pn.HSpacer(),
+                                wgt_nn,
+                                sizing_mode="stretch_width",
+                                margin=15,
+                            ),
                             self.plot_proj,
                         ),
                         pn.Column(
