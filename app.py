@@ -278,25 +278,21 @@ class MusicSpace:
         theme = "plotly" if theme == "light" else "plotly_dark"
         org_data = self.data[~self.data["annot"]]
         fit_feat = self.feats_z if self.use_z else self.feats
-        agg = (
-            org_data.melt(
-                id_vars=["lab", "member"],
-                value_vars=fit_feat,
-                var_name="feat",
-                value_name="value",
-            )
-            .groupby(["lab", "feat"])["value"]
-            .agg(["mean", "sem"])
-            .reset_index()
+        dat_melt = org_data.melt(
+            id_vars=["lab", "member", "artist", "name"],
+            value_vars=fit_feat,
+            var_name="feat",
+            value_name="value",
         )
-        fig = px.line(
-            agg,
+        fig = px.box(
+            dat_melt,
             x="feat",
-            y="mean",
-            error_y="sem",
+            y="value",
             color="lab",
             color_discrete_map=self.cmap,
+            category_orders={"feat": fit_feat},
             template=theme,
+            hover_data=["member", "artist", "name"],
         )
         fig.layout.autosize = True
         self.plot_feat.object = fig
@@ -304,11 +300,20 @@ class MusicSpace:
     def add_feat_line(self, new_dat):
         fit_feat = self.feats_z if self.use_z else self.feats
         df = new_dat.melt(
-            id_vars=["member"], value_vars=fit_feat, var_name="feat", value_name="value"
-        ).sort_values("feat")
+            id_vars=["member", "artist", "name"],
+            value_vars=fit_feat,
+            var_name="feat",
+            value_name="value",
+        )
         self.plot_feat.object.add_traces(
             px.line(
-                df, x="feat", y="value", color="member", color_discrete_map=self.cmap
+                df,
+                x="feat",
+                y="value",
+                color="member",
+                color_discrete_map=self.cmap,
+                category_orders={"feat": fit_feat},
+                hover_data=["member", "artist", "name"],
             ).data
         )
 
