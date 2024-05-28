@@ -2,7 +2,6 @@
 import base64
 from io import StringIO
 
-import numpy as np
 import pandas as pd
 import panel as pn
 import plotly.express as px
@@ -54,15 +53,18 @@ class MusicSpace:
         modal_btn = pn.widgets.Button(name="Enter Password")
         modal_btn.on_click(self.cb_modal)
         self.plot_proj = pn.pane.Plotly()
+        self.plot_feat = pn.pane.Plotly()
         self.layout_main = pn.Column(modal_btn, sizing_mode="stretch_width")
         self.layout_modal = pn.Column("Hint: c#1", wgt_pw)
         self.template.main.append(self.layout_main)
         self.template.modal.append(self.layout_modal)
         # init data
+        self.use_z = True
         self.auth_success = False
         self.data = None
         self.model = None
         self.nneighbor = 5
+        self.ranges = dict()
 
     def serve(self) -> pn.Column:
         return self.template.servable()
@@ -85,6 +87,7 @@ class MusicSpace:
             client_id=self.app_id, client_secret=self.app_secret
         )
         self.feats = FEATS
+        self.feats_z = [f + "-z" for f in self.feats]
         self.sp = spotipy.Spotify(client_credentials_manager=auth)
         self.data = pd.read_csv(StringIO(self.data_raw))
 
@@ -99,6 +102,7 @@ class MusicSpace:
             self.data[fn] = [f[fn] for f in feats]
         self.data["new"] = False
         self.data["annot"] = False
+        self.update_data_z()
 
     def add_entry(self, member, uri):
         try:
@@ -119,11 +123,19 @@ class MusicSpace:
                 "annot": True,
             }
             dat.update(feats)
-            comps = self.model.transform(
-                np.array(list(feats.values())).reshape((1, -1))
-            ).squeeze()
-            dat.update({"comp{}".format(i): p for i, p in enumerate(comps)})
             self.data = pd.concat([self.data, pd.DataFrame([dat])], ignore_index=True)
+            self.update_data_z()
+            idx = self.data.index[-1]
+            fit_feat = self.feats_z if self.use_z else self.feats
+            comps = self.model.transform(self.data.loc[[idx], fit_feat]).squeeze()
+            for i, p in enumerate(comps):
+                self.data.loc[idx, "comp{}".format(i)] = p
+
+    def update_data_z(self):
+        org_data = self.data[~self.data["annot"]]
+        for fn in self.feats:
+            mean, std = org_data[fn].mean(), org_data[fn].std()
+            self.data[fn + "-z"] = (self.data[fn] - mean) / std
 
     def init_main(self):
         if self.auth_success:
@@ -148,9 +160,14 @@ class MusicSpace:
                 [
                     wgt_title,
                     wgt_info,
-                    pn.Row(self.wgt_member, self.wgt_link, wgt_add),
-                    wgt_nn,
-                    self.plot_proj,
+                    pn.Row(
+                        pn.Column(
+                            pn.Row(self.wgt_member, self.wgt_link, wgt_add),
+                            wgt_nn,
+                            self.plot_proj,
+                        ),
+                        self.plot_feat,
+                    ),
                 ]
             )
             self.template.close_modal()
@@ -164,10 +181,14 @@ class MusicSpace:
                 n_components=3,
                 neighbors_algorithm="brute",
             )
-        self.model.fit(self.data.loc[~self.data["annot"], self.feats])
-        comps = self.model.transform(self.data[self.feats])
+        fit_feat = self.feats_z if self.use_z else self.feats
+        self.model.fit(self.data.loc[~self.data["annot"], fit_feat])
+        comps = self.model.transform(self.data[fit_feat])
         for i in range(3):
-            self.data["comp{}".format(i)] = comps[:, i]
+            c = comps[:, i]
+            self.data["comp{}".format(i)] = c
+            # pad = np.ptp(c) * 0.02
+            # self.ranges["comp{}".format(i)] = np.min(c) - pad, np.max(c) + pad
 
     def init_proj_plot(self, theme=None):
         theme = "plotly" if theme == "light" else "plotly_dark"
@@ -176,6 +197,9 @@ class MusicSpace:
             x="comp0",
             y="comp1",
             z="comp2",
+            # range_x=self.ranges["comp0"],
+            # range_y=self.ranges["comp1"],
+            # range_z=self.ranges["comp2"],
             color="lab",
             template=theme,
             hover_data=["member", "artist", "name"],
@@ -218,6 +242,32 @@ class MusicSpace:
     def update_proj_plot(self):
         self.add_annt_data(self.data[self.data["new"]])
 
+    def init_feat_plot(self, theme=None):
+        theme = "plotly" if theme == "light" else "plotly_dark"
+        org_data = self.data[~self.data["annot"]]
+        fit_feat = self.feats_z if self.use_z else self.feats
+        agg = (
+            org_data.melt(
+                id_vars=["lab", "member"],
+                value_vars=fit_feat,
+                var_name="feat",
+                value_name="value",
+            )
+            .groupby(["lab", "feat"])["value"]
+            .agg(["mean", "sem"])
+            .reset_index()
+        )
+        fig = px.line(
+            agg,
+            x="feat",
+            y="mean",
+            error_y="sem",
+            color="lab",
+            template=theme,
+        )
+        fig.layout.autosize = True
+        self.plot_feat.object = fig
+
     def cb_modal(self, evt):
         self.template.open_modal()
 
@@ -243,6 +293,7 @@ class MusicSpace:
                 return
             self.update_model()
             self.init_proj_plot()
+            self.init_feat_plot()
             self.init_main()
 
     def cb_add_member(self, evt):
