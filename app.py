@@ -2,6 +2,7 @@
 import base64
 from io import StringIO
 
+import numpy as np
 import pandas as pd
 import panel as pn
 import plotly.express as px
@@ -10,6 +11,7 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from sklearn.decomposition import PCA
+from spotipy.exceptions import SpotifyException
 from spotipy.oauth2 import SpotifyClientCredentials
 
 FEATS = [
@@ -50,7 +52,7 @@ class MusicSpace:
         modal_btn = pn.widgets.Button(name="Enter Password")
         modal_btn.on_click(self.cb_modal)
         self.plot_proj = pn.pane.Plotly()
-        self.layout_main = pn.Column(modal_btn)
+        self.layout_main = pn.Column(modal_btn, sizing_mode="stretch_width")
         self.layout_modal = pn.Column("Hint: c#1", wgt_pw)
         self.template.main.append(self.layout_main)
         self.template.modal.append(self.layout_modal)
@@ -89,19 +91,93 @@ class MusicSpace:
         tracks = self.sp.tracks(uris)["tracks"]
         feats = self.sp.audio_features(uris)
         self.data["name"] = [t["name"] for t in tracks]
+        self.data["id"] = [t["id"] for t in tracks]
         self.data["artist"] = [t["artists"][0]["name"] for t in tracks]
         for fn in self.feats:
             self.data[fn] = [f[fn] for f in feats]
+        self.data["new"] = False
+
+    def add_entry(self, member, uri):
+        try:
+            track = self.sp.track(uri)
+        except SpotifyException:
+            self.notif.error("Invalid Spotify URI")
+            return
+        if not (track["id"] in self.data["id"].to_list()):
+            feats = self.sp.audio_features(uri)[0]
+            feats = {fn: feats[fn] for fn in self.feats}
+            dat = {
+                "member": member,
+                "uri": uri,
+                "name": track["name"],
+                "id": track["id"],
+                "artist": track["artists"][0]["name"],
+                "new": True,
+            }
+            dat.update(feats)
+            pcs = self.model.transform(
+                np.array(list(feats.values())).reshape((1, -1))
+            ).squeeze()
+            dat.update({"pc{}".format(i): p for i, p in enumerate(pcs)})
+            self.data = pd.concat([self.data, pd.DataFrame([dat])], ignore_index=True)
 
     def update_main(self):
         if self.auth_success:
-            self.layout_main[0] = pn.panel("Welcome to Lab Music Space")
-            self.layout_main.append(self.plot_proj)
+            wgt_title = pn.pane.Alert("Welcome to Lab Music Space!", alert_type="dark")
+            wgt_info = pn.pane.Alert(
+                """
+                - Input the name and favorite song of new lab member to show in music space
+                - Hover over individual points to see more info
+                """,
+                alert_type="info",
+            )
+            self.wgt_member = pn.widgets.TextInput(name="New Member")
+            self.wgt_link = pn.widgets.TextInput(name="Spotify Link")
+            wgt_add = pn.widgets.Button(name="Add Member")
+            wgt_add.on_click(self.cb_add_member)
+            self.layout_main.clear()
+            self.layout_main.extend(
+                [
+                    wgt_title,
+                    wgt_info,
+                    pn.Row(self.wgt_member, self.wgt_link, wgt_add),
+                    self.plot_proj,
+                ]
+            )
             self.template.close_modal()
 
+    def update_annotation(self):
+        new_dat = self.data[self.data["new"]]
+        for idx, row in new_dat.iterrows():
+            self.plot_proj.object.add_trace(
+                px.scatter_3d(
+                    row.to_frame().T,
+                    x="pc0",
+                    y="pc1",
+                    z="pc2",
+                    color="member",
+                    hover_data=["member", "artist", "name"],
+                ).data[0]
+            )
+            old_annot = self.plot_proj.object.layout.scene.annotations
+            self.plot_proj.object.update_layout(
+                scene={
+                    "annotations": list(old_annot)
+                    + [
+                        {
+                            "x": row["pc0"],
+                            "y": row["pc1"],
+                            "z": row["pc2"],
+                            "text": row["member"],
+                        }
+                    ]
+                }
+            )
+            self.data.loc[idx, "new"] = False
+
     def update_model(self):
-        pca = PCA(n_components=3, whiten=True)
-        pcs = pca.fit_transform(self.data[self.feats])
+        self.model = PCA(n_components=3, whiten=True)
+        pcs = self.model.fit_transform(self.data[self.feats])
         for i in range(3):
             self.data["pc{}".format(i)] = pcs[:, i]
 
@@ -140,6 +216,10 @@ class MusicSpace:
             self.update_model()
             self.update_proj_plot()
             self.update_main()
+
+    def cb_add_member(self, evt):
+        self.add_entry(self.wgt_member.value_input, self.wgt_link.value_input)
+        self.update_annotation()
 
 
 # %% serve app
