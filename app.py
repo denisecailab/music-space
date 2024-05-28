@@ -11,6 +11,7 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from sklearn.decomposition import PCA
+from sklearn.manifold import Isomap
 from spotipy.exceptions import SpotifyException
 from spotipy.oauth2 import SpotifyClientCredentials
 
@@ -26,7 +27,7 @@ FEATS = [
     "liveness",
     "valence",
     "tempo",
-    "duration_ms",
+    # "duration_ms",
     "time_signature",
 ]
 KEY_SALT = b"\x89 \xa9\xf4\xe1\xbe\x84\x01'ym\xf0k\xcf\x7f{"
@@ -114,10 +115,10 @@ class MusicSpace:
                 "new": True,
             }
             dat.update(feats)
-            pcs = self.model.transform(
+            comps = self.model.transform(
                 np.array(list(feats.values())).reshape((1, -1))
             ).squeeze()
-            dat.update({"pc{}".format(i): p for i, p in enumerate(pcs)})
+            dat.update({"comp{}".format(i): p for i, p in enumerate(comps)})
             self.data = pd.concat([self.data, pd.DataFrame([dat])], ignore_index=True)
 
     def update_main(self):
@@ -151,9 +152,9 @@ class MusicSpace:
             self.plot_proj.object.add_trace(
                 px.scatter_3d(
                     row.to_frame().T,
-                    x="pc0",
-                    y="pc1",
-                    z="pc2",
+                    x="comp0",
+                    y="comp1",
+                    z="comp2",
                     color="member",
                     hover_data=["member", "artist", "name"],
                 ).data[0]
@@ -164,9 +165,9 @@ class MusicSpace:
                     "annotations": list(old_annot)
                     + [
                         {
-                            "x": row["pc0"],
-                            "y": row["pc1"],
-                            "z": row["pc2"],
+                            "x": row["comp0"],
+                            "y": row["comp1"],
+                            "z": row["comp2"],
                             "text": row["member"],
                         }
                     ]
@@ -174,19 +175,26 @@ class MusicSpace:
             )
             self.data.loc[idx, "new"] = False
 
-    def update_model(self):
-        self.model = PCA(n_components=3, whiten=True)
-        pcs = self.model.fit_transform(self.data[self.feats])
+    def update_model(self, model="isomap"):
+        if model == "pca":
+            self.model = PCA(n_components=3, whiten=True)
+        elif model == "isomap":
+            self.model = Isomap(
+                n_neighbors=int(len(self.data) / 5),
+                n_components=3,
+                neighbors_algorithm="brute",
+            )
+        comps = self.model.fit_transform(self.data[self.feats])
         for i in range(3):
-            self.data["pc{}".format(i)] = pcs[:, i]
+            self.data["comp{}".format(i)] = comps[:, i]
 
     def update_proj_plot(self, theme=None):
         theme = "plotly" if theme == "light" else "plotly_dark"
         fig = px.scatter_3d(
             self.data,
-            x="pc0",
-            y="pc1",
-            z="pc2",
+            x="comp0",
+            y="comp1",
+            z="comp2",
             color="lab",
             template=theme,
             hover_data=["member", "artist", "name"],
