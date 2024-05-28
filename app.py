@@ -11,7 +11,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from plotly.express.colors import qualitative
 from sklearn.decomposition import PCA
-from sklearn.manifold import Isomap
+from sklearn.manifold import Isomap, SpectralEmbedding
 from spotipy.exceptions import SpotifyException
 from spotipy.oauth2 import SpotifyClientCredentials
 
@@ -59,6 +59,7 @@ class MusicSpace:
         self.template.main.append(self.layout_main)
         self.template.modal.append(self.layout_modal)
         # init data
+        self.fit_org_only = False
         self.use_z = True
         self.auth_success = False
         self.data = None
@@ -125,11 +126,14 @@ class MusicSpace:
             dat.update(feats)
             self.data = pd.concat([self.data, pd.DataFrame([dat])], ignore_index=True)
             self.update_data_z()
-            idx = self.data.index[-1]
-            fit_feat = self.feats_z if self.use_z else self.feats
-            comps = self.model.transform(self.data.loc[[idx], fit_feat]).squeeze()
-            for i, p in enumerate(comps):
-                self.data.loc[idx, "comp{}".format(i)] = p
+            if self.fit_org_only:
+                idx = self.data.index[-1]
+                fit_feat = self.feats_z if self.use_z else self.feats
+                comps = self.model.transform(self.data.loc[[idx], fit_feat]).squeeze()
+                for i, p in enumerate(comps):
+                    self.data.loc[idx, "comp{}".format(i)] = p
+            else:
+                self.update_model()
 
     def update_data_z(self):
         org_data = self.data[~self.data["annot"]]
@@ -181,9 +185,16 @@ class MusicSpace:
                 n_components=3,
                 neighbors_algorithm="brute",
             )
+        elif model == "spectral":
+            self.model = SpectralEmbedding(
+                n_components=3, affinity="rbf", n_neighbors=self.nneighbor
+            )
         fit_feat = self.feats_z if self.use_z else self.feats
-        self.model.fit(self.data.loc[~self.data["annot"], fit_feat])
-        comps = self.model.transform(self.data[fit_feat])
+        if self.fit_org_only:
+            self.model.fit(self.data.loc[~self.data["annot"], fit_feat])
+            comps = self.model.transform(self.data[fit_feat])
+        else:
+            comps = self.model.fit_transform(self.data[fit_feat])
         for i in range(3):
             c = comps[:, i]
             self.data["comp{}".format(i)] = c
@@ -240,7 +251,10 @@ class MusicSpace:
             self.data.loc[idx, "new"] = False
 
     def update_proj_plot(self):
-        self.add_annt_data(self.data[self.data["new"]])
+        if self.fit_org_only:
+            self.add_annt_data(self.data[self.data["new"]])
+        else:
+            self.init_proj_plot()
 
     def init_feat_plot(self, theme=None):
         theme = "plotly" if theme == "light" else "plotly_dark"
