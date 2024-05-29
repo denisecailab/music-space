@@ -49,19 +49,18 @@ class MusicSpace:
         # https://github.com/holoviz/panel/issues/5488
         self.notif = pn.state.notifications
         wgt_pw = pn.widgets.PasswordInput(
-            name="Password",
-            placeholder="Press <Enter> to confirm",
-            styles={"font-size": "120%"},
+            name="Password", placeholder="Press <Enter> to confirm"
         )
         wgt_pw.param.watch(self.cb_pw, "value")
         modal_btn = pn.widgets.Button(
-            name="Enter Password", styles={"font-size": "120%"}
+            name="Enter Password",
+            align="center",
         )
         modal_btn.on_click(self.cb_modal)
         self.plot_proj = pn.pane.Plotly()
         self.plot_feat = pn.pane.Plotly()
         self.layout_main = pn.Column(modal_btn, sizing_mode="stretch_width")
-        self.layout_modal = pn.Column("Hint: c#1", wgt_pw, styles={"font-size": "120%"})
+        self.layout_modal = pn.Column(pn.pane.Markdown("Hint: c#1"), wgt_pw)
         self.template.main.append(self.layout_main)
         self.template.modal.append(self.layout_modal)
         # init data
@@ -182,7 +181,7 @@ class MusicSpace:
                 "This tool visualize lab music space defined by everyone's favorite song.\n"
                 "Having this completely unbiased and objective metric space is extremely important, especially for recruitment purpose, because **Team work makes the best work!**",
                 alert_type="dark",
-                styles={"font-size": "120%"},
+                styles={"font-size": "105%"},
             )
             wgt_info = pn.pane.Alert(
                 "# How to use\n"
@@ -191,34 +190,30 @@ class MusicSpace:
                 "- `N_neighbors` is a parameter controlling how divided the points are. "
                 "Lower value will make points more likely to be divided/form local clusters",
                 alert_type="info",
-                styles={"font-size": "120%"},
+                styles={"font-size": "105%"},
             )
             self.wgt_member = pn.widgets.TextInput(
                 name="New Member",
                 align="center",
-                styles={"font-size": "110%"},
+                sizing_mode="stretch_width",
             )
             self.wgt_link = pn.widgets.TextInput(
-                name="Spotify Link",
-                align="center",
-                styles={"font-size": "110%"},
+                name="Spotify Link", align="center", sizing_mode="stretch_width"
             )
-            wgt_add = pn.widgets.Button(
-                name="Add Member",
-                align="center",
-                styles={"font-size": "110%"},
-            )
+            wgt_add = pn.widgets.Button(name="Add Member", align="center")
             wgt_add.on_click(self.cb_add_member)
             wgt_nn = pn.widgets.IntSlider(
                 name="N_neighbors",
                 value=5,
                 start=1,
                 end=int(len(self.data) * 0.8),
-                styles={"font-size": "110%"},
+                sizing_mode="stretch_width",
             )
             wgt_nn.param.watch(self.cb_nneighbor, "value")
-            self.wgt_current_tk = pn.pane.Markdown(styles={"font-size": "120%"})
-            self.wgt_current_im = pn.pane.JPG(height=500)
+            self.wgt_current_tk = pn.pane.Markdown(
+                styles={"font-size": "110%"}, sizing_mode="stretch_width"
+            )
+            self.wgt_current_im = pn.pane.JPG(sizing_mode="scale_height")
             self.cid = self.data["id"][0]
             self.update_current_tk()
             self.layout_main.clear()
@@ -235,7 +230,6 @@ class MusicSpace:
                                 pn.HSpacer(),
                                 wgt_nn,
                                 sizing_mode="stretch_width",
-                                margin=15,
                             ),
                             self.plot_proj,
                         ),
