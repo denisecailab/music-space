@@ -60,7 +60,11 @@ class MusicSpace:
         self.plot_proj = pn.pane.Plotly()
         self.plot_feat = pn.pane.Plotly()
         self.layout_main = pn.Column(modal_btn, sizing_mode="stretch_width")
-        self.layout_modal = pn.Column(pn.pane.Markdown("Hint: c#1"), wgt_pw)
+        self.layout_modal = pn.Column(
+            pn.pane.Markdown("Hint: c#1", styles={"font-size": "120%"}),
+            wgt_pw,
+            sizing_mode="stretch_both",
+        )
         self.template.main.append(self.layout_main)
         self.template.modal.append(self.layout_modal)
         # init data
