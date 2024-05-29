@@ -132,9 +132,13 @@ class MusicSpace:
     def update_cmap(self):
         org_data = self.data[~self.data["annot"]]
         annot_data = self.data[self.data["annot"]]
+        for mem in org_data["member"].unique():
+            self.cmap[mem] = qualitative.Plotly[0]
         for lab, c in zip(org_data["lab"].unique(), itt.cycle(qualitative.Safe)):
             self.cmap[lab] = c
-        for mem, c in zip(annot_data["member"].unique(), itt.cycle(qualitative.Plotly)):
+        for mem, c in zip(
+            annot_data["member"].unique(), itt.cycle(qualitative.Plotly[1:])
+        ):
             self.cmap[mem] = c
 
     def add_entry(self, member, uri):
@@ -192,17 +196,22 @@ class MusicSpace:
                 "- Input the name and favorite song of new lab member to show in music space.\n"
                 "- Hover over individual points to see more info.\n"
                 "- `N_neighbors` is a parameter controlling how divided the points are. "
-                "Lower value will make points more likely to be divided/form local clusters",
+                "Lower value will make points more likely to be divided/form local clusters.\n"
+                "- Click [here](https://developer.spotify.com/documentation/web-api/reference/get-audio-features) for explanation of features",
                 alert_type="info",
                 styles={"font-size": "105%"},
             )
             self.wgt_member = pn.widgets.TextInput(
                 name="New Member",
+                placeholder="John Doe",
                 align="center",
                 sizing_mode="stretch_width",
             )
             self.wgt_link = pn.widgets.TextInput(
-                name="Spotify Link", align="center", sizing_mode="stretch_width"
+                name="Spotify Link",
+                placeholder="http://open.spotify.com/track/6rqhFgbbKwnb9MLmUQDhG6",
+                align="center",
+                sizing_mode="stretch_width",
             )
             wgt_add = pn.widgets.Button(name="Add Member", align="center")
             wgt_add.on_click(self.cb_add_member)
@@ -256,9 +265,7 @@ class MusicSpace:
                 neighbors_algorithm="brute",
             )
         elif model == "spectral":
-            self.model = SpectralEmbedding(
-                n_components=3, affinity="rbf", n_neighbors=self.nneighbor
-            )
+            self.model = SpectralEmbedding(n_components=3, n_neighbors=self.nneighbor)
         fit_feat = self.feats_z if self.use_z else self.feats
         if self.fit_org_only:
             self.model.fit(self.data.loc[~self.data["annot"], fit_feat])
@@ -350,6 +357,7 @@ class MusicSpace:
             template=theme,
             hover_data=["member", "artist", "name"],
         )
+        fig.update_traces(opacity=0.5)
         fig.update_layout(autosize=True, margin_r=250)
         self.plot_feat.object = fig
 
@@ -361,17 +369,17 @@ class MusicSpace:
             var_name="feat",
             value_name="value",
         )
-        self.plot_feat.object.add_traces(
-            px.line(
-                df,
-                x="feat",
-                y="value",
-                color="member",
-                color_discrete_map=self.cmap,
-                category_orders={"feat": fit_feat},
-                hover_data=["member", "artist", "name"],
-            ).data
+        fig = px.line(
+            df,
+            x="feat",
+            y="value",
+            color="member",
+            color_discrete_map=self.cmap,
+            category_orders={"feat": fit_feat},
+            hover_data=["member", "artist", "name"],
         )
+        fig.update_traces(line={"width": 3})
+        self.plot_feat.object.add_traces(fig.data[0])
 
     def update_hover_feat(self):
         fit_feat = self.feats_z if self.use_z else self.feats
@@ -382,7 +390,7 @@ class MusicSpace:
             var_name="feat",
             value_name="value",
         )
-        trace = px.line(
+        fig = px.line(
             df,
             x="feat",
             y="value",
@@ -390,7 +398,9 @@ class MusicSpace:
             color_discrete_map=self.cmap,
             category_orders={"feat": fit_feat},
             hover_data=["member", "artist", "name"],
-        ).data[0]
+        )
+        fig.update_traces(line={"width": 3})
+        trace = fig.data[0]
         trace["meta"] = "id_hover"
         old_data = self.plot_feat.object.data
         hover_idxs = []
