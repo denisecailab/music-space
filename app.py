@@ -308,25 +308,11 @@ class MusicSpace:
                     y="comp1",
                     z="comp2",
                     color="member",
+                    text="member",
                     color_discrete_map=self.cmap,
                     hover_data=["member", "artist", "name"],
                     custom_data=["id"],
                 ).data[0]
-            )
-            old_annot = self.plot_proj.object.layout.scene.annotations
-            self.plot_proj.object.update_layout(
-                scene={
-                    "annotations": list(old_annot)
-                    + [
-                        {
-                            "x": row["comp0"],
-                            "y": row["comp1"],
-                            "z": row["comp2"],
-                            "text": row["member"],
-                            "font": {"size": 16},
-                        }
-                    ]
-                }
             )
 
     def update_proj_plot(self):
