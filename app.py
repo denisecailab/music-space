@@ -175,6 +175,9 @@ class MusicSpace:
                     self.data.loc[idx, "comp{}".format(i)] = p
             else:
                 self.update_model()
+            return True
+        else:
+            return False
 
     def update_data_z(self):
         org_data = self.data[~self.data["annot"]]
@@ -440,9 +443,10 @@ class MusicSpace:
             self.init_main()
 
     def cb_add_member(self, evt):
-        self.add_entry(self.wgt_member.value_input, self.wgt_link.value_input)
-        self.update_proj_plot()
-        self.add_feat_line(self.data[self.data["new"]])
+        hasNew = self.add_entry(self.wgt_member.value_input, self.wgt_link.value_input)
+        if hasNew:
+            self.update_proj_plot()
+            self.add_feat_line(self.data[self.data["new"]])
         self.data["new"] = False
 
     def cb_nneighbor(self, evt):
