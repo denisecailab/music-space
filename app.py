@@ -137,7 +137,7 @@ class MusicSpace:
         for lab, c in zip(org_data["lab"].unique(), itt.cycle(qualitative.Safe)):
             self.cmap[lab] = c
         for mem, c in zip(
-            annot_data["member"].unique(), itt.cycle(qualitative.Plotly[1:])
+            annot_data["member"].unique(), itt.cycle(qualitative.Plotly[2:])
         ):
             self.cmap[mem] = c
 
@@ -309,6 +309,8 @@ class MusicSpace:
                     z="comp2",
                     color="member",
                     text="member",
+                    symbol="member",
+                    symbol_sequence=["diamond"],
                     color_discrete_map=self.cmap,
                     hover_data=["member", "artist", "name"],
                     custom_data=["id"],
